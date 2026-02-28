@@ -1,5 +1,4 @@
 use std::{env, error::Error, fs, process};
-use minigrep::{grep, grep_case_insensitive};
 
 struct Config {
     query: String,
@@ -44,8 +43,8 @@ fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let content = fs::read_to_string(config.path)?;
 
     match config.ignore_case {
-        true => grep_case_insensitive(&config.query, &content).for_each(|line| println!("{line}")),
-        false => grep(&config.query, &content).for_each(|line| println!("{line}")),
+        true => minigrep::grep_case_insensitive(&config.query, &content).for_each(|line| println!("{line}")),
+        false => minigrep::grep(&config.query, &content).for_each(|line| println!("{line}")),
     };
     Ok(())
 }
