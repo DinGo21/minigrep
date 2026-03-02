@@ -1,8 +1,8 @@
-use std::{env, error::Error, fs, process};
+use std::{io, env, error::Error, fs, process};
 
 struct Config {
     query: String,
-    path: String,
+    path: Option<String>,
     ignore_case: bool,
 }
 
@@ -14,10 +14,7 @@ impl Config {
             Some(arg) => arg,
             None => return Err("Didn't get a query string"),
         };
-        let path = match args.next() {
-            Some(arg) => arg,
-            None => return Err("Didn't get a path string"),
-        };
+        let path = args.next();
         let ignore_case = env::var("IGNORE_CASE").is_ok();
         Ok(Config {
             query,
@@ -40,11 +37,24 @@ fn main() {
 }
 
 fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let content = fs::read_to_string(config.path)?;
-
-    match config.ignore_case {
-        true => minigrep::grep_case_insensitive(&config.query, &content).for_each(|line| println!("{line}")),
-        false => minigrep::grep(&config.query, &content).for_each(|line| println!("{line}")),
+    if let Some(path) = config.path {
+        exec_grep(&config.query, &fs::read_to_string(path)?, config.ignore_case);
+        return Ok(());
     };
+    loop {
+        let mut content = String::new();
+        io::stdin().read_line(&mut content)?;
+        if content.is_empty() {
+            break;
+        }
+        exec_grep(&config.query, &content, config.ignore_case);
+    }
     Ok(())
+}
+
+fn exec_grep(query: &str, content: &str, ignore_case: bool) {
+    match ignore_case {
+        true => minigrep::grep_case_insensitive(query, content).for_each(|line| println!("{line}")),
+        false => minigrep::grep(query, content).for_each(|line| println!("{line}")),
+    };
 }
